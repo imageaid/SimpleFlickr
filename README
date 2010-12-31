@@ -1,3 +1,10 @@
 Real README data to come!
 
-For now, see the index.cfm file for configuration, installation, etc. 
+#Install the plugin.
+
+*Download a Zip archive of the plugin on github at: <a href="https://github.com/imageaid/SimpleFlickr" target="_blank">https://github.com/imageaid/SimpleFlickr</a>.
+*Rename the archive to: "SimpleFickr-0.1.1.zip" (no quotes).
+*Drop the archive into your Wheels plugins folder.
+*Restart or reload Wheels.
+
+See the index.cfm file after you install your plugin.
