@@ -17,7 +17,6 @@
 		<cfscript>
 			variables.flickr_api_key = arguments.flickrAPIKey;
 		    variables.flickr_url = arguments.flickrURL;
-		    variables.flickr_method = arguments.flickrMethod;
 			variables.flickr_secret = arguments.flickrSecret;
 			return;
 		</cfscript>
@@ -34,10 +33,10 @@
 	<cffunction name="getFlickrPhotoSet" output="false" returntype="xml" access="public" hint="I return XML representing a Flickr Photoset" displayname="getFlickrPhotoSet">
 		<cfargument name="photosetID" type="string" required="true" hint="" displayname="photosetID" />
 		<cfset var result = xmlNew() />
-		<cfhttp url="#variables.flickr_url#" method="get" useragent="" charset="utf-8" name="flickr_call">
+		<cfhttp url="#variables.flickr_url#" method="get" useragent="" charset="utf-8" result="flickr_call">
 			<cfhttpparam type="url" name="api_key" value="#variables.flickr_api_key#" />
 			<cfhttpparam type="url" name="method" value="flickr.photosets.getPhotos" />
-			<cfhttpparam type="url" name="photoset_id" value="#variables.flickr_photosetID#" />
+			<cfhttpparam type="url" name="photoset_id" value="#arguments.photosetID#" />
 		</cfhttp>
 		<cfset result = xmlParse(flickr_call.filecontent) />
 		<cfreturn result />
