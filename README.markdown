@@ -1,4 +1,6 @@
-#Real README data to come!#
+# Real README data to come! #
+
+In the meantime, you can read on or check the newly created [SimpleFlickr Wiki](https://github.com/imageaid/SimpleFlickr/wiki).
 
 ##Install the plugin.##
 
