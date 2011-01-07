@@ -47,11 +47,10 @@
 	<p>In your application configuration file (i.e., config/settings.cfm), set the following variables.</p>
 	<pre>
 &lt;cfscript&gt;
-	loc.flickr = {};
-	loc.flickr.flickrAPIKey = "MYKEY";
-	loc.flickr.flickrSecret = "MYSECRET";
-	loc.flickr.flickrURL = "http://api.flickr.com/services/rest/"; // other options are available ... see Flickr API for details. I prefer REST
+	loc.flickr = {};                                               
 	loc.flickr.flickrUserID = "MY FLICKR USER ID";// check http://idgettr.com/ if you don't know what this value is
+	// other options are available ... see Flickr API for details. I prefer REST. This is optional.
+	loc.flickr.flickrURL = "http://api.flickr.com/services/rest/"; 
 	set(flickr=loc.flickr);
 &lt;/cfscript&gt;
 	</pre>
