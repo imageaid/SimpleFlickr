@@ -1,29 +1,58 @@
 <!--- @@Copyright: Copyright (c) 2011 ImageAid, Incorporated. All rights reserved. --->
 <cfcomponent output="false" mixin="controller">
 	
-	<cfproperty name="flickr_api_key" type="string" default="63949ae6557e899d62f25bea01431f61" displayname="flickrAPIKey" hint="I represent the Flickr API KEY which is required for access the API." />
 	<cfproperty name="flickr_url" type="string" default="http://api.flickr.com/services/rest/" displayname="flickrURL" hint="I represent the URL to which API request is made." />
-	<cfproperty name="flickr_secret" type="string" default="71b62fa186506ae4" displayname="flickrSecret" hint="I represent the Flickr secret for an account to access the API." />
+	<cfproperty name="flickr_api_key" type="string" default="a6c902bfd3f638f9930540bc31541a87" displayname="flickrAPIKey" hint="I represent the Flickr API KEY which is required for access the API." />
+	<cfproperty name="flickr_secret" type="string" default="ec9d66e5e91dc309" displayname="flickrSecret" hint="I represent the Flickr secret for an account to access the API." />
 	<cfproperty name="flickr_user_id" type="string" default="" displayname="flickrUserID" hint="" />
 	<cfproperty name="flickr_response_format" type="string" default="json" displayname="flickrResponseFormat" hint="I represent the response format from Flickr" />
 	
 	<cffunction access="public" returntype="SimpleFlickr" name="init" hint="I initialize the SimpleFlickr plugin/object" displayname="init">
-		<cfset this.version = "1.1,1.1.1"/>
+		<cfscript>
+			this.version = "1.1,1.1.1";//sets the Wheels versions the plugin is compatible with.
+			return this;
+		</cfscript>
 		<cfreturn this />
 	</cffunction>
 	
 	<!--- PLUGIN CONFIG --->
 	<cffunction name="$setSimpleFlickrConfig" output="false" returntype="void" access="public" hint="I set the access data for calls to the Flickr API" displayname="$setSimpleFlickrConfig">
-		<cfargument name="flickrAPIKey" default="#variables.flickr_api_key#" type="string" required="false" hint="" displayname="flickrAPIKey" />
-		<cfargument name="flickrURL" default="#variables.flickr_url#" type="string" required="false" hint="" displayname="flickrURL" />
-		<cfargument name="flickrSecret" default="" type="string" required="false" hint="" displayname="flickrSecret" />
-		<cfargument name="flickrUserID" default="" type="string" required="false" hint="" displayname="flickrUserID" />
+		<cfargument name="flickrAPIKey" type="string" required="false" displayname="flickrAPIKey" />
+		<cfargument name="flickrURL" type="string" required="false" displayname="flickrURL" />
+		<cfargument name="flickrSecret" type="string" required="false" displayname="flickrSecret" />
+		<cfargument name="flickrUserID" type="string" required="false" displayname="flickrUserID" /> 
+		<cfargument name="flickrResponseFormat" type="string" required="false" displayname="flickrResponseFormat" />
 		<cfscript>
-			variables.flickr_api_key = arguments.flickrAPIKey;
-		    variables.flickr_url = arguments.flickrURL;
-			variables.flickr_secret = arguments.flickrSecret;
-			variables.flickr_user_id = arguments.flickrUserID;
-			variables.flickr_response_format = "json";
+			if(structKeyExists(arguments,"flickrAPIKey")){
+				variables.flickr_api_key = arguments.flickrAPIKey;
+			}
+			else{
+				variables.flickr_api_key = "a6c902bfd3f638f9930540bc31541a87";
+			}
+			if(structKeyExists(arguments,"flickrURL")){
+				variables.flickr_url = arguments.flickrURL;
+			}
+			else{
+				variables.flickr_url = "http://api.flickr.com/services/rest/";
+			}
+			if(structKeyExists(arguments,"flickrSecret")){
+				variables.flickr_secret = arguments.flickrSecret;
+			}
+			else{
+				variables.flickr_secret = "ec9d66e5e91dc309";
+			}
+		    if(structKeyExists(arguments,"flickrUserID")){
+				variables.flickr_user_id = arguments.flickrUserID;
+			}
+			else{
+				variables.flickr_user_id = "";
+			}
+			if(structKeyExists(arguments,"flickrResponseFormat")){
+				variables.flickr_response_format = arguments.flickrResponseFormat;
+			}	 
+			else{
+				variables.flickr_response_format = "json";
+			}   	
 			return;
 		</cfscript>
 	</cffunction>
@@ -58,18 +87,13 @@
 				return [];
 			}
 			else{
-				return http_result.filecontent;
+				if(lcase(arguments.flickrResponseFormat) IS "json"){
+					return deserializeJSON(http_result.filecontent);
+				}
+				else{
+					return xmlParse(http_result.filecontent);
+				}
 			}
-		</cfscript>
-	</cffunction>
-	
-	<cffunction name="getFlickrPhotoSets" returntype="any" access="public" output="false" displayname="getFlickrPhotoSets" hint="I return the photosets for a specified user.">
-		<cfscript>
-			var http_result = $httpCallWrapper(
-				flickrMethod="flickr.photosets.getList",
-				flickrResponseFormat=variables.flickr_response_format,
-				useUserID=true
-			);
 		</cfscript>
 	</cffunction>
 	
@@ -85,7 +109,7 @@
 				tagMode=arguments.tagMode,
 				useUserID=arguments.useUserID
 			);
-			var photo_result = deserializeJSON(http_result);
+			var photo_result = {};
 			// very basic error handling ... just enough at this moment to ensure that we don't crash the app
 			if(isStruct(http_result) AND structKeyExists(http_result,"error_code") AND http_result.error_code == 10000){
 				return [];
@@ -98,10 +122,10 @@
 	
 	<!--- PRIVATE METHODS --->
 	<cffunction name="$getPhotosFromJSON" output="false" returntype="array" access="public" hint="I retrieve the photo data from the JSON result of a Flickr Photoset call" displayname="$getPhotosFromJSONPhotoSet">
-		<cfargument name="json_photos" type="string" required="true" hint="I am struct from the JSON result from a Flickr Photoset API call" displayname="photo_set" />
+		<cfargument name="photo_set" type="array" required="true" hint="I am struct from the JSON result from a Flickr Photoset API call" displayname="photo_set" />
 		<cfscript>
 			// create an array of the photos from the JSON and then populate the correct attributes.
-			var photoset_photos = deserializeJSON(arguments.json_photos);
+			var photoset_photos = arguments.photo_set;
 		    var photos = [];
 		    var photo = {};
 			// loop over photos and build the return array
