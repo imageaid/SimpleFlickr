@@ -1,9 +1,9 @@
 <!--- @@Copyright: Copyright (c) 2011 ImageAid, Incorporated. All rights reserved. --->
 <cfcomponent output="false" mixin="controller">
 	
+	<cfproperty name="flickr_api_key" type="string" default="63949ae6557e899d62f25bea01431f61" displayname="flickrAPIKey" hint="I represent the Flickr API KEY which is required for access the API." />
 	<cfproperty name="flickr_url" type="string" default="http://api.flickr.com/services/rest/" displayname="flickrURL" hint="I represent the URL to which API request is made." />
-	<cfproperty name="flickr_api_key" type="string" default="" displayname="flickrAPIKey" hint="I represent the Flickr API KEY which is required for access the API." />
-	<cfproperty name="flickr_secret" type="string" default="" displayname="flickrSecret" hint="I represent the Flickr secret for an account to access the API." />
+	<cfproperty name="flickr_secret" type="string" default="71b62fa186506ae4" displayname="flickrSecret" hint="I represent the Flickr secret for an account to access the API." />
 	<cfproperty name="flickr_user_id" type="string" default="" displayname="flickrUserID" hint="" />
 	<cfproperty name="flickr_response_format" type="string" default="json" displayname="flickrResponseFormat" hint="I represent the response format from Flickr" />
 	
@@ -14,8 +14,8 @@
 	
 	<!--- PLUGIN CONFIG --->
 	<cffunction name="$setSimpleFlickrConfig" output="false" returntype="void" access="public" hint="I set the access data for calls to the Flickr API" displayname="$setSimpleFlickrConfig">
-		<cfargument name="flickrAPIKey" type="string" required="true" hint="" displayname="flickrAPIKey" />
-		<cfargument name="flickrURL" type="string" required="true" hint="" displayname="flickrURL" />
+		<cfargument name="flickrAPIKey" default="#variables.flickr_api_key#" type="string" required="false" hint="" displayname="flickrAPIKey" />
+		<cfargument name="flickrURL" default="#variables.flickr_url#" type="string" required="false" hint="" displayname="flickrURL" />
 		<cfargument name="flickrSecret" default="" type="string" required="false" hint="" displayname="flickrSecret" />
 		<cfargument name="flickrUserID" default="" type="string" required="false" hint="" displayname="flickrUserID" />
 		<cfscript>
@@ -58,13 +58,18 @@
 				return [];
 			}
 			else{
-				if(lcase(arguments.flickrResponseFormat) IS "json"){
-					return deserializeJSON(http_result.filecontent);
-				}
-				else{
-					return xmlParse(http_result.filecontent);
-				}
+				return http_result.filecontent;
 			}
+		</cfscript>
+	</cffunction>
+	
+	<cffunction name="getFlickrPhotoSets" returntype="any" access="public" output="false" displayname="getFlickrPhotoSets" hint="I return the photosets for a specified user.">
+		<cfscript>
+			var http_result = $httpCallWrapper(
+				flickrMethod="flickr.photosets.getList",
+				flickrResponseFormat=variables.flickr_response_format,
+				useUserID=true
+			);
 		</cfscript>
 	</cffunction>
 	
@@ -80,7 +85,7 @@
 				tagMode=arguments.tagMode,
 				useUserID=arguments.useUserID
 			);
-			var photo_result = {};
+			var photo_result = deserializeJSON(http_result);
 			// very basic error handling ... just enough at this moment to ensure that we don't crash the app
 			if(isStruct(http_result) AND structKeyExists(http_result,"error_code") AND http_result.error_code == 10000){
 				return [];
@@ -93,10 +98,10 @@
 	
 	<!--- PRIVATE METHODS --->
 	<cffunction name="$getPhotosFromJSON" output="false" returntype="array" access="public" hint="I retrieve the photo data from the JSON result of a Flickr Photoset call" displayname="$getPhotosFromJSONPhotoSet">
-		<cfargument name="photo_set" type="array" required="true" hint="I am struct from the JSON result from a Flickr Photoset API call" displayname="photo_set" />
+		<cfargument name="json_photos" type="string" required="true" hint="I am struct from the JSON result from a Flickr Photoset API call" displayname="photo_set" />
 		<cfscript>
 			// create an array of the photos from the JSON and then populate the correct attributes.
-			var photoset_photos = arguments.photo_set;
+			var photoset_photos = deserializeJSON(arguments.json_photos);
 		    var photos = [];
 		    var photo = {};
 			// loop over photos and build the return array
