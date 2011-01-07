@@ -5,7 +5,7 @@ In the meantime, you can read on or check the newly created [SimpleFlickr Wiki](
 ##Install the plugin.##
 
 * Download a Zip archive of the plugin on github at: https://github.com/imageaid/SimpleFlickr
-* Rename the archive to: "SimpleFickr-0.1.1.zip" (no quotes)
+* Rename the archive to: "SimpleFickr-0.2.5.zip" (no quotes)
 * Drop the archive into your Wheels plugins folder
 * Restart or reload Wheels
 

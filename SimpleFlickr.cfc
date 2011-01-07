@@ -2,28 +2,57 @@
 <cfcomponent output="false" mixin="controller">
 	
 	<cfproperty name="flickr_url" type="string" default="http://api.flickr.com/services/rest/" displayname="flickrURL" hint="I represent the URL to which API request is made." />
-	<cfproperty name="flickr_api_key" type="string" default="" displayname="flickrAPIKey" hint="I represent the Flickr API KEY which is required for access the API." />
-	<cfproperty name="flickr_secret" type="string" default="" displayname="flickrSecret" hint="I represent the Flickr secret for an account to access the API." />
+	<cfproperty name="flickr_api_key" type="string" default="a6c902bfd3f638f9930540bc31541a87" displayname="flickrAPIKey" hint="I represent the Flickr API KEY which is required for access the API." />
+	<cfproperty name="flickr_secret" type="string" default="ec9d66e5e91dc309" displayname="flickrSecret" hint="I represent the Flickr secret for an account to access the API." />
 	<cfproperty name="flickr_user_id" type="string" default="" displayname="flickrUserID" hint="" />
 	<cfproperty name="flickr_response_format" type="string" default="json" displayname="flickrResponseFormat" hint="I represent the response format from Flickr" />
 	
 	<cffunction access="public" returntype="SimpleFlickr" name="init" hint="I initialize the SimpleFlickr plugin/object" displayname="init">
-		<cfset this.version = "1.1,1.1.1"/>
+		<cfscript>
+			this.version = "1.1,1.1.1";//sets the Wheels versions the plugin is compatible with.
+			return this;
+		</cfscript>
 		<cfreturn this />
 	</cffunction>
 	
 	<!--- PLUGIN CONFIG --->
 	<cffunction name="$setSimpleFlickrConfig" output="false" returntype="void" access="public" hint="I set the access data for calls to the Flickr API" displayname="$setSimpleFlickrConfig">
-		<cfargument name="flickrAPIKey" type="string" required="true" hint="" displayname="flickrAPIKey" />
-		<cfargument name="flickrURL" type="string" required="true" hint="" displayname="flickrURL" />
-		<cfargument name="flickrSecret" default="" type="string" required="false" hint="" displayname="flickrSecret" />
-		<cfargument name="flickrUserID" default="" type="string" required="false" hint="" displayname="flickrUserID" />
+		<cfargument name="flickrAPIKey" type="string" required="false" displayname="flickrAPIKey" />
+		<cfargument name="flickrURL" type="string" required="false" displayname="flickrURL" />
+		<cfargument name="flickrSecret" type="string" required="false" displayname="flickrSecret" />
+		<cfargument name="flickrUserID" type="string" required="false" displayname="flickrUserID" /> 
+		<cfargument name="flickrResponseFormat" type="string" required="false" displayname="flickrResponseFormat" />
 		<cfscript>
-			variables.flickr_api_key = arguments.flickrAPIKey;
-		    variables.flickr_url = arguments.flickrURL;
-			variables.flickr_secret = arguments.flickrSecret;
-			variables.flickr_user_id = arguments.flickrUserID;
-			variables.flickr_response_format = "json";
+			if(structKeyExists(arguments,"flickrAPIKey")){
+				variables.flickr_api_key = arguments.flickrAPIKey;
+			}
+			else{
+				variables.flickr_api_key = "a6c902bfd3f638f9930540bc31541a87";
+			}
+			if(structKeyExists(arguments,"flickrURL")){
+				variables.flickr_url = arguments.flickrURL;
+			}
+			else{
+				variables.flickr_url = "http://api.flickr.com/services/rest/";
+			}
+			if(structKeyExists(arguments,"flickrSecret")){
+				variables.flickr_secret = arguments.flickrSecret;
+			}
+			else{
+				variables.flickr_secret = "ec9d66e5e91dc309";
+			}
+		    if(structKeyExists(arguments,"flickrUserID")){
+				variables.flickr_user_id = arguments.flickrUserID;
+			}
+			else{
+				variables.flickr_user_id = "";
+			}
+			if(structKeyExists(arguments,"flickrResponseFormat")){
+				variables.flickr_response_format = arguments.flickrResponseFormat;
+			}	 
+			else{
+				variables.flickr_response_format = "json";
+			}   	
 			return;
 		</cfscript>
 	</cffunction>
