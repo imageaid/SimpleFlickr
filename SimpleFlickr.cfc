@@ -57,7 +57,31 @@
 		</cfscript>
 	</cffunction>
 	
-	<!--- PUBLIC API --->
+	<!--- PUBLIC API --->  
+	<cffunction name="getFlickrPhotoSets" output="false" returntype="array" access="public" hint="I return an array of photoset ids from Flickr" displayname="getFlickrPhotoSets"> 
+		<cfargument name="useUserID" type="boolean" required="false" default="true" displayname="useUserID" />
+		<cfscript>
+			var http_result = $httpCallWrapper(
+				flickrMethod="flickr.photosets.getList",
+				flickrResponseFormat=variables.flickr_response_format,
+				useUserID=arguments.useUserID
+			);    
+			// very basic error handling ... just enough at this moment to ensure that we don't crash the app
+			if(isStruct(http_result) AND structKeyExists(http_result,"error_code") AND http_result.error_code == 10000){
+				// because this method will most likely be called from getFlickrPhotoSetPhotos, we're adding some basic error handling here as well
+				return [];
+			}
+			else{
+				if(lcase(variables.flickr_response_format) IS "json"){
+					 return $getPhotoSetsFromJSON(photo_sets = http_result.filecontent);
+				}
+				else{
+					return $getPhotoSetsFromXML(photo_sets = http_result.filecontent);
+				}
+			}
+		</cfscript>
+	</cffunction>
+	
 	<cffunction name="getFlickrPhotoSetPhotos" output="false" returntype="array" access="public" hint="I return an array of photos from a Flickr Photoset" displayname="getFlickrPhotoSetPhotos">
 		<cfargument name="photosetID" type="string" required="true" hint="" displayname="photosetID" />
 		<cfscript>
@@ -66,8 +90,13 @@
 			if(isArray(photo_result) AND !arrayLen(photo_result)){
 				return [];
 			}
-			else{
-				return $getPhotosFromJSON(photo_set = photo_result.photoset.photo);
+			else{   
+				if(lcase(variables.flickr_response_format) == "json"){
+					return $getPhotosFromJSON(photo_set = photo_result);
+				}
+				else{
+					return $getPhotosFromXML(photo_set = photo_result);
+				}
 			}
 		</cfscript>
 	</cffunction>
@@ -86,13 +115,8 @@
 				// because this method will most likely be called from getFlickrPhotoSetPhotos, we're adding some basic error handling here as well
 				return [];
 			}
-			else{
-				if(lcase(arguments.flickrResponseFormat) IS "json"){
-					return deserializeJSON(http_result.filecontent);
-				}
-				else{
-					return xmlParse(http_result.filecontent);
-				}
+			else{ 
+				return http_result.filecontent;
 			}
 		</cfscript>
 	</cffunction>
@@ -109,25 +133,31 @@
 				tagMode=arguments.tagMode,
 				useUserID=arguments.useUserID
 			);
-			var photo_result = {};
 			// very basic error handling ... just enough at this moment to ensure that we don't crash the app
 			if(isStruct(http_result) AND structKeyExists(http_result,"error_code") AND http_result.error_code == 10000){
 				return [];
 			}
 			else{	
-				return $getPhotosFromJSON(photo_set = photo_result.photos.photo);
+				return $getPhotosFromJSON(photo_set = http_result.filecontent);
 			}
 		</cfscript>
 	</cffunction>
 	
 	<!--- PRIVATE METHODS --->
-	<cffunction name="$getPhotosFromJSON" output="false" returntype="array" access="public" hint="I retrieve the photo data from the JSON result of a Flickr Photoset call" displayname="$getPhotosFromJSONPhotoSet">
-		<cfargument name="photo_set" type="array" required="true" hint="I am struct from the JSON result from a Flickr Photoset API call" displayname="photo_set" />
+	<cffunction name="$getPhotosFromJSON" output="false" returntype="array" access="public" hint="I retrieve the photo data from the JSON result of a Flickr Photoset call" displayname="$getPhotosFromJSON">
+		<cfargument name="photo_set" type="string" required="true" hint="I am struct from the JSON result from a Flickr Photoset API call" displayname="photo_set" />
 		<cfscript>
 			// create an array of the photos from the JSON and then populate the correct attributes.
-			var photoset_photos = arguments.photo_set;
+			var photoset_struct = deserializeJSON(arguments.photo_set);
+			var photoset_photos = [];
 		    var photos = [];
-		    var photo = {};
+		    var photo = {}; 
+			if(structKeyExists(photoset_struct,"photoset")){
+				photoset_photos = photoset_struct.photoset.photo;
+			}
+			else if(structKeyExists(photoset_struct,"photos")){
+				photoset_photos = photoset_struct.photos.photo
+			}
 			// loop over photos and build the return array
 		    for(i=1; i lte arrayLen(photoset_photos); i = i + 1){
 				photo = {};
@@ -140,11 +170,11 @@
 		</cfscript>
 	</cffunction>
 	
-	<cffunction name="$getPhotosFromXML" output="false" returntype="array" access="public" hint="I retrieve the photo data from the XML result of a Flickr Photoset call" displayname="$getPhotosFromXMLPhotoSet">
+	<cffunction name="$getPhotosFromXML" output="false" returntype="array" access="public" hint="I retrieve the photo data from the XML result of a Flickr Photoset call" displayname="$getPhotosFromXML">
 		<cfargument name="photo_set" type="array" required="true" hint="I am the XML result from a Flickr Photoset API call" displayname="photo_set" />
 		<cfscript>
 			// create an array of the photos from the XML and then populate the correct attributes.
-		    var photoset_photos = arguments.photo_set;
+		    var photoset_photos = xmlParse(arguments.photo_set);
 		    var photos = [];
 		    var photo = {};
 		    var photo_atts = {};
@@ -157,6 +187,49 @@
 		        arrayAppend(photos,photo);
 		    }
 		    return photos;
+		</cfscript>
+	</cffunction>   
+	
+	<cffunction name="$getPhotoSetsFromJSON" output="false" returntype="array" access="public" hint="I retrieve the photo set data from the JSON result of a Flickr Photoset call" displayname="$getPhotoSetsFromJSON">
+		<cfargument name="photo_sets" type="string" required="true" hint="I am string representing the JSON result from a Flickr Photoset API call" displayname="photo_sets" />
+		<cfscript>
+			// create an array of the photosets from the JSON and then populate the correct attributes.
+			var photoset_struct = deserializeJSON(arguments.photo_sets);
+			var photosets_struct = photoset_struct.photosets.photoset;  
+			var photosets = [];
+			var photoset = {};
+			// loop over photos and build the return array
+		    for(i=1; i lte arrayLen(photosets_struct); i = i + 1){
+				photoset = {};
+		        photoset.title = photosets_struct[i].title._content;
+		        photoset.id = photosets_struct[i].id;  
+				photoset.description = photosets_struct[i].description._content;
+		        arrayAppend(photosets,photoset);
+		    }
+		    return photosets;
+		</cfscript>
+	</cffunction>
+	
+	<cffunction name="$getPhotoSetsFromXML" output="false" returntype="array" access="public" hint="I retrieve the photo set data from the XML result of a Flickr Photoset call" displayname="$getPhotoSetsFromXML">
+		<cfargument name="photo_sets" type="xml" required="true" hint="I am the XML result from a Flickr Photoset API call" displayname="photo_sets" />
+		<cfscript>
+			// create an array of the photosets from the XML and then populate the correct attributes.
+			var photoset_struct = xmlParse(arguments.photo_sets);
+			var photosets_struct = photoset_struct.XmlChildren[1].XmlChildren[1].XmlChildren;  
+			var photosets = [];
+			var photoset = {};    
+			var photoset_atts = {};
+			// loop over photos and build the return array
+		    for(i=1; i lte arrayLen(photosets_struct); i = i + 1){
+				photoset_atts = {};
+				photoset_atts = photosets_struct[i].XmlAttributes;
+				photoset = {};
+		        photoset.title = photosets_struct[i].XmlChildren[1].XmlText;
+		        photoset.id = photoset_atts.id;  
+				photoset.description = photosets_struct[i].XmlChildren[2].XmlText;
+		        arrayAppend(photosets,photoset);
+		    }
+		    return photosets;
 		</cfscript>
 	</cffunction>
 	
