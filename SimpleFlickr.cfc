@@ -92,7 +92,8 @@
 		<cfargument name="flickrUserID" type="string" required="false" displayname="flickrUserID" />
 		<cfargument name="useUserID" type="boolean" required="false" default="true" displayname="useUserID" hint="" />
 		<cfscript>
-			var http_result = "";
+			var http_result = "";   
+			
 			if(structKeyExists(arguments,"flickrUserID")){
 				application.flickr_user_id = arguments.flickrUserID;
 			}

@@ -1,6 +1,6 @@
 <!--- @@Copyright: Copyright (c) 2011 ImageAid, Incorporated. All rights reserved. --->
 <cfsetting enablecfoutputonly="true">
-	<h1>SimpleFlickr for Wheels v0.2.5</h1>
+	<h1>SimpleFlickr for Wheels v0.5.0</h1>
 	<p>A plugin to access some of the more basic, routine methods of the Flickr API.</p>
 	<h2>Usage</h2>
 	<p>
