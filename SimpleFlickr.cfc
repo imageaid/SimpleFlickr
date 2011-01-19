@@ -12,7 +12,6 @@
 			this.version = "1.1,1.1.1";//sets the Wheels versions the plugin is compatible with.
 			return this;
 		</cfscript>
-		<cfreturn this />
 	</cffunction>
 	
 	<!--- PLUGIN CONFIG --->
