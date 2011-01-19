@@ -4,65 +4,31 @@
 	<cfproperty name="flickr_url" type="string" default="http://api.flickr.com/services/rest/" displayname="flickrURL" hint="I represent the URL to which API request is made." />
 	<cfproperty name="flickr_api_key" type="string" default="a6c902bfd3f638f9930540bc31541a87" displayname="flickrAPIKey" hint="I represent the Flickr API KEY which is required for access the API." />
 	<cfproperty name="flickr_secret" type="string" default="ec9d66e5e91dc309" displayname="flickrSecret" hint="I represent the Flickr secret for an account to access the API." />
-	<cfproperty name="flickr_user_id" type="string" default="" displayname="flickrUserID" hint="" />
 	<cfproperty name="flickr_response_format" type="string" default="json" displayname="flickrResponseFormat" hint="I represent the response format from Flickr" />
+	
+	<cfscript>
+		$setSimpleFlickrConfig();
+	</cfscript>
 	
 	<cffunction access="public" returntype="SimpleFlickr" name="init" hint="I initialize the SimpleFlickr plugin/object" displayname="init">
 		<cfscript>
-			this.version = "1.1,1.1.1";//sets the Wheels versions the plugin is compatible with.
+			application.version = "1.1,1.1.1";//sets the Wheels versions the plugin is compatible with.
 			return this;
 		</cfscript>
 	</cffunction>
 	
-	<!--- PLUGIN CONFIG --->
-	<cffunction name="$setSimpleFlickrConfig" output="false" returntype="void" access="public" hint="I set the access data for calls to the Flickr API" displayname="$setSimpleFlickrConfig">
-		<cfargument name="flickrAPIKey" type="string" required="false" displayname="flickrAPIKey" />
-		<cfargument name="flickrURL" type="string" required="false" displayname="flickrURL" />
-		<cfargument name="flickrSecret" type="string" required="false" displayname="flickrSecret" />
-		<cfargument name="flickrUserID" type="string" required="false" displayname="flickrUserID" /> 
-		<cfargument name="flickrResponseFormat" type="string" required="false" displayname="flickrResponseFormat" />
-		<cfscript>
-			if(structKeyExists(arguments,"flickrAPIKey")){
-				variables.flickr_api_key = arguments.flickrAPIKey;
-			}
-			else{
-				variables.flickr_api_key = "a6c902bfd3f638f9930540bc31541a87";
-			}
-			if(structKeyExists(arguments,"flickrURL")){
-				variables.flickr_url = arguments.flickrURL;
-			}
-			else{
-				variables.flickr_url = "http://api.flickr.com/services/rest/";
-			}
-			if(structKeyExists(arguments,"flickrSecret")){
-				variables.flickr_secret = arguments.flickrSecret;
-			}
-			else{
-				variables.flickr_secret = "ec9d66e5e91dc309";
-			}
-		    if(structKeyExists(arguments,"flickrUserID")){
-				variables.flickr_user_id = arguments.flickrUserID;
-			}
-			else{
-				variables.flickr_user_id = "";
-			}
-			if(structKeyExists(arguments,"flickrResponseFormat")){
-				variables.flickr_response_format = arguments.flickrResponseFormat;
-			}	 
-			else{
-				variables.flickr_response_format = "json";
-			}   	
-			return;
-		</cfscript>
-	</cffunction>
-	
 	<!--- PUBLIC API --->  
-	<cffunction name="getFlickrPhotoSets" output="false" returntype="array" access="public" hint="I return an array of photoset ids from Flickr" displayname="getFlickrPhotoSets"> 
+	<cffunction name="getFlickrPhotoSets" output="false" returntype="array" access="public" hint="I return an array of photoset ids from Flickr" displayname="getFlickrPhotoSets">
+		<cfargument name="flickrUserID" type="string" required="true" displayname="flickrUserID" /> 
 		<cfargument name="useUserID" type="boolean" required="false" default="true" displayname="useUserID" />
 		<cfscript>
-			var http_result = $httpCallWrapper(
+			var http_result = "";
+			if(structKeyExists(arguments,"flickrUserID")){
+				application.flickr_user_id = arguments.flickrUserID;
+			}
+			http_result = $httpCallWrapper(
 				flickrMethod="flickr.photosets.getList",
-				flickrResponseFormat=variables.flickr_response_format,
+				flickrResponseFormat=application.flickr_response_format,  
 				useUserID=arguments.useUserID
 			);    
 			// very basic error handling ... just enough at this moment to ensure that we don't crash the app
@@ -71,7 +37,7 @@
 				return [];
 			}
 			else{
-				if(lcase(variables.flickr_response_format) IS "json"){
+				if(lcase(application.flickr_response_format) IS "json"){
 					 return $getPhotoSetsFromJSON(photo_sets = http_result.filecontent);
 				}
 				else{
@@ -90,7 +56,7 @@
 				return [];
 			}
 			else{   
-				if(lcase(variables.flickr_response_format) == "json"){
+				if(lcase(application.flickr_response_format) == "json"){
 					return $getPhotosFromJSON(photo_set = photo_result);
 				}
 				else{
@@ -102,7 +68,7 @@
 	
 	<cffunction name="getFlickrPhotoSet" output="false" returntype="any" access="public" hint="I return XML or JSON representing a Flickr Photoset" displayname="getFlickrPhotoSet">
 		<cfargument name="photosetID" type="string" required="true" hint="" displayname="photosetID" />
-		<cfargument name="flickrResponseFormat" type="string" required="false" default="#variables.flickr_response_format#" displayname="flickrResponseFormat" hint="" />
+		<cfargument name="flickrResponseFormat" type="string" required="false" default="#application.flickr_response_format#" displayname="flickrResponseFormat" hint="" />
 		<cfscript>
 			var http_result = $httpCallWrapper(
 				flickrMethod="flickr.photosets.getPhotos",
@@ -120,18 +86,24 @@
 		</cfscript>
 	</cffunction>
 	
-	<cffunction name="getFlickrPhotosByTags" output="false" returntype="array" access="public" hint="I return an array of photos from a Flickr tag or tags" displayname="getFlickrPhotosByTags">
+	<cffunction name="getFlickrPhotosByTags" output="false" returntype="array" access="public" hint="I return an array of photos from a Flickr tag or tags" displayname="getFlickrPhotosByTags">                                                                                                 
 		<cfargument name="tags" type="string" required="true" hint="I am a comma-delimted list of tags upon which to search" displayname="tag" />
-		<cfargument name="tagMode" type="string" required="false" default="any" hint="I can be any or all" displayname="tagMode" />
+		<cfargument name="tagMode" type="string" required="false" default="any" hint="I can be any or all" displayname="tagMode" />  
+		<cfargument name="flickrUserID" type="string" required="false" displayname="flickrUserID" />
 		<cfargument name="useUserID" type="boolean" required="false" default="true" displayname="useUserID" hint="" />
 		<cfscript>
-			var http_result = $httpCallWrapper(
+			var http_result = "";
+			if(structKeyExists(arguments,"flickrUserID")){
+				application.flickr_user_id = arguments.flickrUserID;
+			}
+			http_result = $httpCallWrapper(
 				flickrMethod="flickr.photos.search",
-				flickrResponseFormat=variables.flickr_response_format,
+				flickrResponseFormat=application.flickr_response_format,
 				tags=arguments.tags,
 				tagMode=arguments.tagMode,
 				useUserID=arguments.useUserID
-			);
+			);      
+			
 			// very basic error handling ... just enough at this moment to ensure that we don't crash the app
 			if(isStruct(http_result) AND structKeyExists(http_result,"error_code") AND http_result.error_code == 10000){
 				return [];
@@ -246,8 +218,8 @@
 		
 		<cftry>
 			<!--- Build and make the HTTP call to the Flickr API --->
-			<cfhttp url="#variables.flickr_url#" method="#arguments.flickrURLMethod#" charset="utf-8" result="flickr_resposne">
-				<cfhttpparam type="url" name="api_key" value="#variables.flickr_api_key#" />
+			<cfhttp url="#application.flickr_url#" method="#arguments.flickrURLMethod#" charset="utf-8" result="flickr_resposne">
+				<cfhttpparam type="url" name="api_key" value="#application.flickr_api_key#" />
 				<cfhttpparam type="url" name="method" value="#arguments.flickrMethod#" />
 				<!--- determine which ID to pass into flickr --->
 				<cfif structKeyExists(arguments,"photosetID")>
@@ -258,7 +230,7 @@
 					<cfhttpparam type="url" name="tag_mode" value="#arguments.tagMode#" />
 				</cfif>
 				<cfif arguments.useUserID>
-					<cfhttpparam type="url" name="user_id" value="#variables.flickr_user_id#" />
+					<cfhttpparam type="url" name="user_id" value="#application.flickr_user_id#" />
 				</cfif>
 				<!--- Flickr Return Format --->
 				<cfif lcase(arguments.flickrResponseFormat) IS "json">
@@ -275,6 +247,46 @@
 		<!--- return the raw result from the CFHTTP call --->
 		<cfreturn flickr_resposne />
 		
+	</cffunction>
+	
+	<!--- PLUGIN CONFIG --->
+	<cffunction name="$setSimpleFlickrConfig" output="false" returntype="void" access="public" hint="I set the access data for calls to the Flickr API" displayname="$setSimpleFlickrConfig">
+		<cfargument name="flickrAPIKey" type="string" required="false" displayname="flickrAPIKey" />
+		<cfargument name="flickrURL" type="string" required="false" displayname="flickrURL" />
+		<cfargument name="flickrSecret" type="string" required="false" displayname="flickrSecret" /> 
+		<cfargument name="flickrResponseFormat" type="string" required="false" displayname="flickrResponseFormat" />
+		<cfscript>
+			if(structKeyExists(arguments,"flickrAPIKey")){
+				application.flickr_api_key = arguments.flickrAPIKey;
+			}
+			else{
+				application.flickr_api_key = "a6c902bfd3f638f9930540bc31541a87";
+			}
+			if(structKeyExists(arguments,"flickrURL")){
+				application.flickr_url = arguments.flickrURL;
+			}
+			else{
+				application.flickr_url = "http://api.flickr.com/services/rest/";
+			}
+			if(structKeyExists(arguments,"flickrSecret")){
+				application.flickr_secret = arguments.flickrSecret;
+			}
+			else{
+				application.flickr_secret = "ec9d66e5e91dc309";
+			}
+		    if(structKeyExists(arguments,"flickrUserID")){
+				application.flickr_user_id = arguments.flickrUserID;
+			}
+			else{
+				application.flickr_user_id = "";
+			}
+			if(structKeyExists(arguments,"flickrResponseFormat")){
+				application.flickr_response_format = arguments.flickrResponseFormat;
+			}	 
+			else{
+				application.flickr_response_format = "json";
+			} 			
+		</cfscript>
 	</cffunction>
 	
 </cfcomponent>
