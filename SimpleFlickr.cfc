@@ -128,7 +128,7 @@
 				photoset_photos = photoset_struct.photoset.photo;
 			}
 			else if(structKeyExists(photoset_struct,"photos")){
-				photoset_photos = photoset_struct.photos.photo
+				photoset_photos = photoset_struct.photos.photo;
 			}
 			// loop over photos and build the return array
 		    for(i=1; i lte arrayLen(photoset_photos); i = i + 1){
