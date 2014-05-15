@@ -11,10 +11,8 @@
 	</cfscript>
 	
 	<cffunction access="public" returntype="SimpleFlickr" name="init" hint="I initialize the SimpleFlickr plugin/object" displayname="init">
-		<cfscript>
-			application.version = "1.1,1.1.1";//sets the Wheels versions the plugin is compatible with.
-			return this;
-		</cfscript>
+		<cfset this.version = "1.0,1.1,1.1.1"/>
+		<cfreturn this/>
 	</cffunction>
 	
 	<!--- PUBLIC API --->  
@@ -125,17 +123,21 @@
 		    var photos = [];
 		    var photo = {}; 
 			if(structKeyExists(photoset_struct,"photoset")){
+				photoset_owner = photoset_struct.photoset.owner;
 				photoset_photos = photoset_struct.photoset.photo;
+				photoset_id = photoset_struct.photoset.id;
 			}
 			else if(structKeyExists(photoset_struct,"photos")){
-				photoset_photos = photoset_struct.photos.photo
+				photoset_photos = photoset_struct.photos.photo;
 			}
 			// loop over photos and build the return array
 		    for(i=1; i lte arrayLen(photoset_photos); i = i + 1){
 				photo = {};
 		        photo.title = photoset_photos[i].title;
 				// URL FORMAT: http://farm{farm-id}.static.flickr.com/{server-id}/{id}_{secret}.jpg
-		        photo.url = "http://farm" & photoset_photos[i].farm & ".static.flickr.com/" & photoset_photos[i].server & "/" & photoset_photos[i].id & "_" & photoset_photos[i].secret & ".jpg";
+		        photo.url = "http://farm" & photoset_photos[i].farm & ".static.flickr.com/" & photoset_photos[i].server & "/" & photoset_photos[i].id & "_" & photoset_photos[i].secret & "_m.jpg";
+		        // Link URL FORMAT = http://www.flickr.com/photos/{user-id}/{photo-id}
+		        photo.link = "http://www.flickr.com/photos/" & photoset_owner & "/" & photoset_photos[i].id;
 		        arrayAppend(photos,photo);
 		    }
 		    return photos;
@@ -143,7 +145,7 @@
 	</cffunction>
 	
 	<cffunction name="$getPhotosFromXML" output="false" returntype="array" access="public" hint="I retrieve the photo data from the XML result of a Flickr Photoset call" displayname="$getPhotosFromXML">
-		<cfargument name="photo_set" type="array" required="true" hint="I am the XML result from a Flickr Photoset API call" displayname="photo_set" />
+		<cfargument name="photo_set" type="xml" required="true" hint="I am the XML result from a Flickr Photoset API call" displayname="photo_set" />
 		<cfscript>
 			// create an array of the photos from the XML and then populate the correct attributes.
 		    var photoset_photos = xmlParse(arguments.photo_set);
@@ -160,7 +162,7 @@
 		    }
 		    return photos;
 		</cfscript>
-	</cffunction>   
+	</cffunction>      
 	
 	<cffunction name="$getPhotoSetsFromJSON" output="false" returntype="array" access="public" hint="I retrieve the photo set data from the JSON result of a Flickr Photoset call" displayname="$getPhotoSetsFromJSON">
 		<cfargument name="photo_sets" type="string" required="true" hint="I am string representing the JSON result from a Flickr Photoset API call" displayname="photo_sets" />
@@ -187,7 +189,7 @@
 		<cfscript>
 			// create an array of the photosets from the XML and then populate the correct attributes.
 			var photoset_struct = xmlParse(arguments.photo_sets);
-			var photosets_struct = photoset_struct.XmlChildren[1].XmlChildren[1].XmlChildren;  
+			var photosets_struct = photoset_struct.XmlChildren[1].XmlChildren[1].XmlChildren;
 			var photosets = [];
 			var photoset = {};    
 			var photoset_atts = {};
